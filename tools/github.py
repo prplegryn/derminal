@@ -28,10 +28,10 @@ class SafeRedirect(urllib.request.HTTPRedirectHandler):
   return result
 
 OPENER=urllib.request.build_opener(SafeRedirect())
-def api(path,method='GET',data=None,binary=False,content_type=None):
+def api(path,method='GET',data=None,binary=False,content_type=None,accept=None):
  url=path if path.startswith('https://') else 'https://api.github.com'+path
  body=data if isinstance(data,bytes) else json.dumps(data).encode() if data is not None else None
- headers={'Authorization':'Bearer '+TOKEN,'User-Agent':'derminal-development','Accept':'application/octet-stream' if binary else 'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28'}
+ headers={'Authorization':'Bearer '+TOKEN,'User-Agent':'derminal-development','Accept':accept or ('application/octet-stream' if binary else 'application/vnd.github+json'),'X-GitHub-Api-Version':'2022-11-28'}
  if body is not None:headers['Content-Type']=content_type or 'application/json'
  try:
   with OPENER.open(urllib.request.Request(url,headers=headers,data=body,method=method),timeout=240) as r:
@@ -105,5 +105,5 @@ if __name__=='__main__':
  elif cmd=='status':status()
  elif cmd=='deliver':deliver(sys.argv[2])
  elif cmd=='logs':
-  raw=api('/repos/'+REPO+'/actions/runs/'+sys.argv[2]+'/logs',binary=True);p=ROOT/'.runtime'/('actions-'+sys.argv[2]+'.zip');p.write_bytes(raw);print(p)
+  raw=api('/repos/'+REPO+'/actions/runs/'+sys.argv[2]+'/logs',binary=True,accept='application/vnd.github+json');p=ROOT/'.runtime'/('actions-'+sys.argv[2]+'.zip');p.write_bytes(raw);print(p)
  else:raise SystemExit('Unknown command')

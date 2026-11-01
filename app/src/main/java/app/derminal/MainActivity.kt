@@ -60,7 +60,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window,false)
         window.statusBarColor=android.graphics.Color.TRANSPARENT
-        window.navigationBarColor=android.graphics.Color.TRANSPARENT
+        window.navigationBarColor=if(Build.VERSION.SDK_INT>=27)android.graphics.Color.TRANSPARENT else android.graphics.Color.rgb(32,35,39)
         if(Build.VERSION.SDK_INT>=29)window.isNavigationBarContrastEnforced=false
         WindowCompat.getInsetsController(window,window.decorView).apply { isAppearanceLightStatusBars=true;isAppearanceLightNavigationBars=true }
         startForegroundService(Intent(this,TerminalService::class.java))

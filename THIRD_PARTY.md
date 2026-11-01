@@ -14,6 +14,6 @@ derminal application code is licensed under Apache-2.0. Components retain their 
 
 Terminal library Java and C source is vendored with original copyright notices. Their Gradle build files were adapted for this project, while terminal implementation is retained. Additional hardening changes are documented in the git history.
 
-`runtime-v1` Release includes `derminal-runtime-sources.tar.gz` containing the exact PRoot, talloc and shared memory source archives, native `.deb` packages, Debian corresponding source archives and package inventory, build recipes and Termux packaging patches. Debian redistribution notices and licenses remain inside the offline filesystem. Each installed binary's corresponding source package version is also recorded.
+Each application Release includes `derminal-runtime-sources.tar.gz` containing the exact PRoot, talloc and shared memory source archives, native `.deb` packages, Debian corresponding source archives and package inventory, build recipes and Termux packaging patches. Debian redistribution notices and licenses remain inside the offline filesystem. Each installed binary's corresponding source package version is also recorded.
 
 Native changes: the PRoot and talloc ELF string `libtalloc.so.2` is padded to `libtalloc.so` without changing offsets, allowing Android's native library filename convention. The loader is selected using `PROOT_LOADER`, dependencies via `LD_LIBRARY_PATH`; no Termux installation is required. PTY is compiled from source with NDK and 16 KB alignment.

@@ -26,11 +26,31 @@ jobs:
       - uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
+      - uses: actions/cache/restore@v4
+        id: runtime-cache
+        with:
+          path: |
+            app/src/main/assets/debian.zip
+            app/src/main/assets/runtime.json
+            app/src/main/jniLibs
+            .runtime/rootfs
+          key: debian-trixie-v1-${{ hashFiles('tools/prepare_runtime.py', 'third_party/runtime/**') }}
       - name: Build offline Debian entirely on GitHub runner
+        if: steps.runtime-cache.outputs.cache-hit != 'true'
         run: |
           sudo python3 tools/prepare_runtime.py --chroot
           sudo chown -R "$USER:$USER" app/src/main/assets app/src/main/jniLibs
-          python3 tools/runtime_bundle.py create .delivery/derminal-runtime-arm64-v1.zip
+      - uses: actions/cache/save@v4
+        if: steps.runtime-cache.outputs.cache-hit != 'true'
+        with:
+          path: |
+            app/src/main/assets/debian.zip
+            app/src/main/assets/runtime.json
+            app/src/main/jniLibs
+            .runtime/rootfs
+          key: ${{ steps.runtime-cache.outputs.cache-primary-key }}
+      - name: Record offline runtime digests
+        run: python3 tools/runtime_bundle.py create .delivery/derminal-runtime-arm64-v1.zip
       - name: Compile ARM64 PTY with NDK
         run: sh tools/build_native.sh
       - name: Restore stable signing identity
