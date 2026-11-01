@@ -22,7 +22,10 @@ def main():
  (sources/'debian-packages.tsv').write_text(inventory)
  specs=sorted({line.split('\t')[2]+'='+line.split('\t')[3] for line in inventory.strip().split('\n')})
  (sources/'debian-source-packages.txt').write_text('\n'.join(specs)+'\n')
- out=root/'tmp/derminal-corresponding-source';out.mkdir(exist_ok=True)
+ # apt verifies signatures as _apt, including when the cached tree is owned
+ # by the runner. Keep its temporary files accessible inside the chroot.
+ (root/'tmp').chmod(0o1777)
+ out=root/'tmp/derminal-corresponding-source';out.mkdir(exist_ok=True);out.chmod(0o777)
  shutil.copyfile(sources/'debian-source-packages.txt',out/'packages.txt')
  (root/'etc/apt/derminal-source.list').write_text('deb-src http://deb.debian.org/debian trixie main contrib\ndeb-src http://security.debian.org/debian-security trixie-security main contrib\ndeb-src http://deb.debian.org/debian trixie-updates main contrib\n')
  run_guest(root,"apt-get -o Dir::Etc::sourcelist=/etc/apt/derminal-source.list -o Dir::Etc::sourceparts=- update && cd /tmp/derminal-corresponding-source && xargs apt-get -o Dir::Etc::sourcelist=/etc/apt/derminal-source.list -o Dir::Etc::sourceparts=- source --download-only < packages.txt")
