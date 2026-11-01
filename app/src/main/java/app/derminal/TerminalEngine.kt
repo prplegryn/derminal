@@ -40,7 +40,7 @@ class DerminalApp : Application() {
         super.onCreate(); engine=TerminalEngine(this)
         engine.logs.event("app.start","version=${BuildConfig.VERSION_NAME} api=${android.os.Build.VERSION.SDK_INT}")
         val previous=Thread.getDefaultUncaughtExceptionHandler()
-        Thread.setDefaultUncaughtExceptionHandler { thread,error -> engine.logs.error("app.crash",error); previous?.uncaughtException(thread,error) }
+        Thread.setDefaultUncaughtExceptionHandler { thread,error -> engine.logs.crash(error); previous?.uncaughtException(thread,error) }
     }
 }
 
@@ -139,12 +139,13 @@ class TerminalEngine(val context: Context) : TerminalSessionClient {
         val fontFile=File(context.filesDir,"custom-font")
         val base=if(p.font=="custom" && fontFile.exists()) runCatching { Typeface.createFromFile(fontFile) }.getOrDefault(Typeface.MONOSPACE) else Typeface.create(if(p.font=="serif") "serif-monospace" else "monospace",Typeface.NORMAL)
         val typeface=if(p.bold) Typeface.create(base,Typeface.BOLD) else base
-        if(v.tag != "${p.font}:${p.bold}:${fontFile.lastModified()}") { v.setTypeface(typeface);v.tag="${p.font}:${p.bold}:${fontFile.lastModified()}" }
+        // TerminalView creates its renderer in setTextSize; setTypeface requires it.
         val px=(p.fontSize * context.resources.displayMetrics.scaledDensity).toInt()
         if(v.contentDescription != "终端 ${p.fontSize}") { v.setTextSize(px);v.contentDescription="终端 ${p.fontSize}" }
+        if(v.tag != "${p.font}:${p.bold}:${fontFile.lastModified()}") { v.setTypeface(typeface);v.tag="${p.font}:${p.bold}:${fontFile.lastModified()}" }
         v.setTerminalCursorBlinkerRate(if(p.blink) 600 else 0)
-        v.setTerminalCursorBlinkerState(true,true)
         active?.let { tab -> if(v.currentSession!==tab.session) v.attachSession(tab.session) }
+        v.setTerminalCursorBlinkerState(true,true)
     }
     fun applyPalette(session: TerminalSession) {
         val p=settings.value
