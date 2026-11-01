@@ -12,7 +12,7 @@ derminal application code is licensed under Apache-2.0. Components retain their 
 | AndroidX / Compose | versions in Gradle | Apache-2.0 |
 | Kotlin / coroutines | versions in Gradle | Apache-2.0 |
 
-Terminal library Java and C source is vendored with original copyright notices. Their Gradle build files were adapted for this project. The view's opacity declaration follows its actual background, allowing transparent Compose backgrounds without suppressing redraws. Additional hardening changes are documented in the git history.
+Terminal library Java and C source is vendored with original copyright notices. Their Gradle build files were adapted for this project, while terminal implementation is retained. Additional hardening changes are documented in the git history.
 
 Each application Release includes `derminal-runtime-sources.tar.gz` containing the exact PRoot, talloc and shared memory source archives, native `.deb` packages, Debian corresponding source archives and package inventory, build recipes and Termux packaging patches. Debian redistribution notices and licenses remain inside the offline filesystem. Each installed binary's corresponding source package version is also recorded.
 
