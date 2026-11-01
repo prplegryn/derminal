@@ -530,7 +530,10 @@ public final class TerminalView extends View {
 
     @Override
     public boolean isOpaque() {
-        return true;
+        // The host may composite a background image behind this view. The
+        // renderer skips default-background cells, so opacity follows the
+        // actual View background instead of assuming every pixel is painted.
+        return super.isOpaque();
     }
 
     /**

@@ -145,6 +145,7 @@ class TerminalEngine(val context: Context) : TerminalSessionClient {
         if(v.tag != "${p.font}:${p.bold}:${fontFile.lastModified()}") { v.setTypeface(typeface);v.tag="${p.font}:${p.bold}:${fontFile.lastModified()}" }
         v.setTerminalCursorBlinkerRate(if(p.blink) 600 else 0)
         active?.let { tab -> if(v.currentSession!==tab.session) v.attachSession(tab.session) }
+        v.syncBackground(p.background)
         v.setTerminalCursorBlinkerState(true,true)
     }
     fun applyPalette(session: TerminalSession) {
@@ -199,7 +200,9 @@ class TerminalEngine(val context: Context) : TerminalSessionClient {
     override fun onCopyTextToClipboard(session: TerminalSession,text: String) { copy(text) }
     override fun onPasteTextFromClipboard(session: TerminalSession?) { requestPaste() }
     override fun onBell(session: TerminalSession) { if(settings.value.bell) view?.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS) }
-    override fun onColorsChanged(session: TerminalSession) { if(session.mHandle==selected) view?.invalidate() }
+    override fun onColorsChanged(session: TerminalSession) {
+        if(session.mHandle==selected) view?.let {it.syncBackground(settings.value.background);it.invalidate()}
+    }
     override fun onTerminalCursorStateChange(state: Boolean) { view?.setTerminalCursorBlinkerState(state,false) }
     override fun setTerminalShellPid(session: TerminalSession,pid: Int) = Unit
     override fun getTerminalCursorStyle(): Int = settings.value.cursor

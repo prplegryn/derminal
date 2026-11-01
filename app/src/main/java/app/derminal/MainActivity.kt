@@ -163,7 +163,7 @@ class MainActivity : ComponentActivity() {
     val image by produceState<Bitmap?>(null,p.background,engine.assetsVersion) { value=if(p.background) withContext(Dispatchers.IO) {BitmapFactory.decodeFile(File(engine.context.filesDir,"background.jpg").path)} else null }
     Box(Modifier.fillMaxSize().background(bg)) {
         if(p.background && image!=null) { Image(image!!.asImageBitmap(),null,Modifier.fillMaxSize(),contentScale=ContentScale.Crop);Box(Modifier.fillMaxSize().background(bg.copy(alpha=p.backgroundDim/100f))) }
-        AndroidView(factory={ context -> TerminalView(context,null).apply { setTerminalViewClient(ViewClient(engine,this));isFocusable=true;isFocusableInTouchMode=true;setIsTerminalViewKeyLoggingEnabled(false);setBackgroundColor(android.graphics.Color.TRANSPARENT);engine.attach(this);requestFocus() } },modifier=Modifier.fillMaxSize().padding(horizontal=7.dp,vertical=5.dp),update={v->engine.attach(v)},onRelease={v->engine.detach(v)})
+        AndroidView(factory={ context -> TerminalView(context,null).apply { setTerminalViewClient(ViewClient(engine,this));isFocusable=true;isFocusableInTouchMode=true;setIsTerminalViewKeyLoggingEnabled(false);engine.attach(this);requestFocus() } },modifier=Modifier.fillMaxSize().padding(horizontal=7.dp,vertical=5.dp),update={v->engine.attach(v)},onRelease={v->engine.detach(v)})
         LaunchedEffect(engine.selected) {
             if(p.autoKeyboard && engine.active?.exited==false) {delay(180);engine.view?.let {it.requestFocus();it.context.getSystemService(InputMethodManager::class.java).showSoftInput(it,InputMethodManager.SHOW_IMPLICIT)}}
         }
