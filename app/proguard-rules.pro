@@ -1,0 +1,2 @@
+-keep class com.termux.terminal.JNI { *; }
+-keepclasseswithmembernames,includedescriptorclasses class * { native <methods>; }

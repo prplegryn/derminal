@@ -1,0 +1,36 @@
+derminal
+Copyright 2026 derminal contributors
+Application code: Apache License, Version 2.0
+
+Termux terminal-emulator and terminal-view
+Copyright Termux contributors; includes Android Terminal Emulator code.
+Apache License, Version 2.0
+Source revision: 8629e632fcb95da272221be327db653fb24befe9
+https://github.com/termux/termux-app
+
+PRoot 5.1.107.98
+Copyright STMicroelectronics and PRoot contributors
+GNU General Public License, version 2 or later, per upstream COPYING.
+https://github.com/termux/proot
+
+talloc 2.5.0
+Copyright Samba contributors
+GNU Lesser General Public License, version 3 or later
+https://www.samba.org/ftp/talloc/
+
+libandroid-shmem 0.7
+Copyright Termux contributors
+Apache License, Version 2.0
+https://github.com/termux/libandroid-shmem
+
+Debian 13 Trixie
+Each package retains its own copyright and license.
+Full notices: /usr/share/doc/<package>/copyright in the terminal filesystem.
+
+AndroidX, Compose, Kotlin and coroutines
+Apache License, Version 2.0
+
+Complete license texts are included in assets/licenses.
+Corresponding native source archives, binary packages, package inventory and
+build instructions accompany the runtime-v1 Release in the project repository:
+https://github.com/prplegryn/derminal
