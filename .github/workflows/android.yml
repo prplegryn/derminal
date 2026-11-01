@@ -39,7 +39,7 @@ jobs:
         if: steps.runtime-cache.outputs.cache-hit != 'true'
         run: |
           sudo python3 tools/prepare_runtime.py --chroot
-          sudo chown -R "$USER:$USER" app/src/main/assets app/src/main/jniLibs
+          sudo chown -hR "$USER:$USER" app/src/main/assets app/src/main/jniLibs .runtime/rootfs
       - uses: actions/cache/save@v4
         if: steps.runtime-cache.outputs.cache-hit != 'true'
         with:

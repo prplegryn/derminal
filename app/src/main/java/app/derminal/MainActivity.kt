@@ -154,39 +154,6 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun KeyDeck(engine: TerminalEngine,onSettings: ()->Unit) {
-    val p=engine.settings.value
-    val context=LocalContext.current
-    val keyboardVisible=WindowInsets.ime.getBottom(LocalDensity.current)>0
-    Column(Modifier.fillMaxWidth().background(Color.White)) {
-        Divider()
-        Row(Modifier.fillMaxWidth().padding(horizontal=5.dp,vertical=4.dp),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                listOf(p.row1,p.row2).forEach { row ->
-                    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(4.dp)) {
-                        KeyInput.parse(row).forEach { key ->
-                            val state=engine.modifiers.state(key)
-                            val shown=if(engine.modifiers.fn>0)mapOf("ESC" to "F1","TAB" to "F2","HOME" to "F3","↑" to "PgUp","END" to "F4","/" to "F5","-" to "F6","←" to "Home","↓" to "PgDn","→" to "End")[key] ?: key else key
-                            val shape=RoundedCornerShape(7.dp)
-                            val basic=Modifier.weight(1f).height(p.keyHeight.dp).clip(shape).background(if(state>0)Ink else Wash).border(1.dp,if(state==2)Accent else if(state>0)Ink else Line,shape).semantics {contentDescription=key + if(state==2)" 已锁定"else if(state==1)" 已启用"else""}
-                            val tap={if(p.keyHaptic)engine.view?.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP);engine.send(key)}
-                            val repeat=key in listOf("↑","↓","←","→","BKSP","DEL","PGUP","PGDN")
-                            Box(basic.then(if(repeat)Modifier.pointerInput(key) {detectTapGestures(onPress={coroutineScope {tap();val job=launch {delay(380);while(true){tap();delay(65)}};try{tryAwaitRelease()}finally{job.cancel()}}})}else Modifier.combinedClickable(onClick=tap,onLongClick={if(key in listOf("CTRL","ALT","SHIFT","FN"))engine.modifiers.toggle(key,true)else tap()})),contentAlignment=Alignment.Center) {
-                                Label(shown,size=if(shown.length>4)10 else 12,color=if(state>0)Color.White else Ink,weight=FontWeight.Medium,maxLines=1)
-                                if(state==2)Box(Modifier.align(Alignment.BottomCenter).padding(bottom=4.dp).size(3.dp).background(Color.White,RoundedCornerShape(3.dp)))
-                            }
-                        }
-                    }
-                }
-            }
-            Column(verticalArrangement=Arrangement.spacedBy(4.dp)) {
-                IconButton("settings","设置",Modifier.size(42.dp,p.keyHeight.dp),onClick=onSettings)
-                IconButton("keyboard","显示或收起键盘",Modifier.size(42.dp,p.keyHeight.dp)) { engine.view?.let { v->val imm=context.getSystemService(InputMethodManager::class.java);if(keyboardVisible)imm.hideSoftInputFromWindow(v.windowToken,0);else {v.requestFocus();imm.showSoftInput(v,InputMethodManager.SHOW_IMPLICIT)} } }
-            }
-        }
-    }
-}
-
 @Composable fun SheetDialog(title: String,onDismiss: ()->Unit,content: @Composable ColumnScope.()->Unit) {
     Dialog(onDismiss,properties=DialogProperties(usePlatformDefaultWidth=false)) {
         Column(Modifier.fillMaxWidth(.92f).widthIn(max=560.dp).clip(RoundedCornerShape(22.dp)).background(Color.White).padding(22.dp)) {

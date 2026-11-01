@@ -20,7 +20,7 @@ data class Preferences(
     val autoKeyboard: Boolean = true,
     val extraAlways: Boolean = true,
     val keyHaptic: Boolean = false,
-    val keyHeight: Int = 42,
+    val keyHeight: Int = 38,
     val volumeCtrl: Boolean = true,
     val workingDirectory: String = "/root",
     val startup: String = "",
@@ -45,7 +45,7 @@ data class Preferences(
     companion object {
         fun from(j: JSONObject): Preferences {
             val d = Preferences()
-            return Preferences(j.optString("theme",d.theme),j.optInt("fontSize",14).coerceIn(9,32),j.optString("font",d.font),j.optBoolean("bold"),j.optInt("cursor",0).coerceIn(0,2),j.optBoolean("blink",true),j.optInt("scrollback",10000).coerceIn(1000,50000),j.optBoolean("keepScreen"),j.optBoolean("wakeLock"),j.optBoolean("bell"),j.optBoolean("autoKeyboard",true),j.optBoolean("extraAlways",true),j.optBoolean("keyHaptic"),j.optInt("keyHeight",42).coerceIn(32,56),j.optBoolean("volumeCtrl",true),j.optString("workingDirectory","/root"),j.optString("startup",""),j.optBoolean("background"),j.optInt("backgroundDim",88).coerceIn(20,100),j.optString("customForeground",""),j.optString("customBackground",""),j.optString("row1",d.row1),j.optString("row2",d.row2),j.optBoolean("seccomp",true))
+            return Preferences(j.optString("theme",d.theme),j.optInt("fontSize",14).coerceIn(9,32),j.optString("font",d.font),j.optBoolean("bold"),j.optInt("cursor",0).coerceIn(0,2),j.optBoolean("blink",true),j.optInt("scrollback",10000).coerceIn(1000,50000),j.optBoolean("keepScreen"),j.optBoolean("wakeLock"),j.optBoolean("bell"),j.optBoolean("autoKeyboard",true),j.optBoolean("extraAlways",true),j.optBoolean("keyHaptic"),j.optInt("keyHeight",d.keyHeight).coerceIn(32,56),j.optBoolean("volumeCtrl",true),j.optString("workingDirectory","/root"),j.optString("startup",""),j.optBoolean("background"),j.optInt("backgroundDim",88).coerceIn(20,100),j.optString("customForeground",""),j.optString("customBackground",""),j.optString("row1",d.row1),j.optString("row2",d.row2),j.optBoolean("seccomp",true))
         }
     }
 }
@@ -54,6 +54,12 @@ class PreferenceStore(context: Context) {
     val disk = context.getSharedPreferences("derminal", Context.MODE_PRIVATE)
     var value by mutableStateOf(runCatching { Preferences.from(JSONObject(disk.getString("preferences","{}")!!)) }.getOrDefault(Preferences()))
         private set
+    init {
+        if(disk.getInt("key-deck-style",0)<1) {
+            if(value.keyHeight==42) update {it.copy(keyHeight=38)}
+            disk.edit().putInt("key-deck-style",1).apply()
+        }
+    }
     fun update(transform: (Preferences) -> Preferences) {
         value = transform(value)
         disk.edit().putString("preferences",value.json().toString()).apply()
