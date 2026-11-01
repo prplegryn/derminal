@@ -40,7 +40,7 @@ import kotlinx.coroutines.withContext
         Spacer(Modifier.height(8.dp))
         SelectionContainer {
             LazyColumn(Modifier.fillMaxWidth().heightIn(min=160.dp,max=340.dp).background(Wash),state=list) {
-                itemsIndexed(lines){index,line->Label(line.ifEmpty{" "},Modifier.fillMaxWidth().background(if(index==matches.getOrNull(current))Color(0xFFE2D8AA)else Color.Transparent).padding(horizontal=10.dp,vertical=2.dp),size=12,mono=true)}
+                itemsIndexed(lines){index,line->Label(line.ifEmpty{" "},Modifier.fillMaxWidth().background(if(index==matches.getOrNull(current))Accent.copy(alpha=.22f)else Color.Transparent).padding(horizontal=10.dp,vertical=2.dp),size=12,mono=true)}
             }
         }
         Spacer(Modifier.height(14.dp));Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Action("复制全部",Modifier.weight(1f)){engine.copy(snapshot)};Action("导出文本",Modifier.weight(1f),primary=true){export.launch("derminal-transcript.txt")}}

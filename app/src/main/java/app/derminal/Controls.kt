@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.runtime.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.PlatformTextStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -31,15 +33,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-val Ink=Color(0xFF202327)
-val Muted=Color(0xFF666D76)
-val Line=Color(0xFFE3E5E8)
-val Wash=Color(0xFFF4F5F6)
-val Accent=Color(0xFF365B75)
-val Danger=Color(0xFFAD3239)
-
 @Composable fun Label(text: String,modifier: Modifier=Modifier,size: Int=14,color: Color=Ink,weight: FontWeight=FontWeight.Normal,maxLines: Int=Int.MAX_VALUE,mono: Boolean=false) {
-    BasicText(text,modifier,style=TextStyle(color=color,fontSize=size.sp,lineHeight=(size*1.45f).sp,fontWeight=weight,fontFamily=if(mono) FontFamily.Monospace else FontFamily.SansSerif),maxLines=maxLines,overflow=TextOverflow.Ellipsis)
+    BasicText(text,modifier,style=TextStyle(color=color,fontSize=size.sp,lineHeight=(size*1.45f).sp,fontWeight=weight,fontFamily=if(mono) FontFamily.Monospace else FontFamily.SansSerif,platformStyle=PlatformTextStyle(includeFontPadding=false)),maxLines=maxLines,overflow=TextOverflow.Ellipsis)
 }
 
 @Composable fun Glyph(name: String,modifier: Modifier=Modifier,color: Color=Ink) {
@@ -72,37 +67,50 @@ val Danger=Color(0xFFAD3239)
     Box(modifier.size(42.dp).clip(RoundedCornerShape(10.dp)).background(if(pressed) Line else Color.Transparent).clickable(source,null,role=Role.Button,onClick=onClick).semantics { contentDescription=description },contentAlignment=Alignment.Center) { Glyph(icon,color=color) }
 }
 
+@Composable fun CompactClose(description: String,modifier: Modifier=Modifier,small: Boolean=false,onClick: ()->Unit) {
+    val source=remember {MutableInteractionSource()};val pressed by source.collectIsPressedAsState()
+    Box(modifier.size(if(small)28.dp else 34.dp).clip(CircleShape).clickable(source,null,role=Role.Button,onClick=onClick).semantics{contentDescription=description},contentAlignment=Alignment.Center) {
+        Box(Modifier.size(if(small)18.dp else 23.dp).background(Muted.copy(alpha=if(pressed).22f else .1f),CircleShape),contentAlignment=Alignment.Center) {Glyph("close",Modifier.size(if(small)10.dp else 12.dp),Muted)}
+    }
+}
+
+@Composable fun TextAction(text: String,modifier: Modifier=Modifier,onClick: ()->Unit) {
+    val source=remember {MutableInteractionSource()};val pressed by source.collectIsPressedAsState()
+    Box(modifier.heightIn(min=32.dp).clip(RoundedCornerShape(7.dp)).background(if(pressed)LocalUiColors.current.pressed else Color.Transparent).clickable(source,null,role=Role.Button,onClick=onClick).padding(horizontal=9.dp,vertical=6.dp),contentAlignment=Alignment.Center) {Label(text,size=12,color=Muted,weight=FontWeight.Medium)}
+}
+
 @Composable fun Action(text: String,modifier: Modifier=Modifier,primary: Boolean=false,destructive: Boolean=false,enabled: Boolean=true,onClick: ()->Unit) {
     val source=remember { MutableInteractionSource() };val pressed by source.collectIsPressedAsState()
-    val bg=when { !enabled->Line;primary && destructive->Danger;primary->Ink;pressed->Line;else->Wash }
+    val bg=when { !enabled->Line;primary && destructive->if(pressed)Color(0xFF932D34)else Color(0xFFAD3239);primary->if(pressed)Ink.copy(alpha=.82f)else Ink;pressed->LocalUiColors.current.pressed;else->Wash }
     Box(modifier.heightIn(min=42.dp).clip(RoundedCornerShape(10.dp)).background(bg).clickable(source,null,enabled=enabled,role=Role.Button,onClick=onClick).padding(horizontal=16.dp,vertical=10.dp),contentAlignment=Alignment.Center) {
-        Label(text,size=14,color=if(primary) Color.White else if(destructive) Danger else if(enabled) Ink else Muted,weight=FontWeight.Medium)
+        Label(text,size=14,color=when{!enabled->Muted;primary && destructive->Color.White;primary->OnInk;destructive->Danger;else->Ink},weight=FontWeight.Medium)
     }
 }
 
 @Composable fun Field(value: String,onChange: (String)->Unit,modifier: Modifier=Modifier,hint: String="",singleLine: Boolean=true,mono: Boolean=false,error: Boolean=false) {
     var focused by remember { mutableStateOf(false) }
-    BasicTextField(value,onChange,modifier.fillMaxWidth().onFocusChanged { focused=it.isFocused }.clip(RoundedCornerShape(10.dp)).background(if(focused) Color.White else Wash).border(if(focused) 1.5.dp else 1.dp,if(error) Danger else if(focused) Ink else Line,RoundedCornerShape(10.dp)).padding(horizontal=12.dp,vertical=11.dp),textStyle=TextStyle(color=Ink,fontSize=14.sp,lineHeight=21.sp,fontFamily=if(mono)FontFamily.Monospace else FontFamily.SansSerif),cursorBrush=SolidColor(Ink),singleLine=singleLine,decorationBox={ inner -> Box { if(value.isEmpty()) Label(hint,color=Muted,size=14,mono=mono);inner() } })
+    BasicTextField(value,onChange,modifier.fillMaxWidth().onFocusChanged { focused=it.isFocused }.clip(RoundedCornerShape(9.dp)).background(if(focused) Raised else Wash).border(if(focused)1.dp else .5.dp,if(error) Danger else if(focused) Accent else Line,RoundedCornerShape(9.dp)).padding(horizontal=12.dp,vertical=11.dp),textStyle=TextStyle(color=Ink,fontSize=14.sp,lineHeight=21.sp,fontFamily=if(mono)FontFamily.Monospace else FontFamily.SansSerif,platformStyle=PlatformTextStyle(includeFontPadding=false)),cursorBrush=SolidColor(Accent),singleLine=singleLine,decorationBox={ inner -> Box { if(value.isEmpty()) Label(hint,color=Muted,size=14,mono=mono);inner() } })
 }
 
 @Composable fun SettingRow(title: String,subtitle: String?=null,onClick: (()->Unit)?=null,trailing: @Composable ()->Unit={}) {
-    Row(Modifier.fillMaxWidth().then(if(onClick!=null)Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick=onClick)else Modifier).padding(vertical=12.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
+    val source=remember {MutableInteractionSource()};val pressed by source.collectIsPressedAsState()
+    Row(Modifier.fillMaxWidth().heightIn(min=48.dp).then(if(onClick!=null)Modifier.clip(RoundedCornerShape(8.dp)).background(if(pressed)LocalUiColors.current.pressed else Color.Transparent).clickable(source,null,onClick=onClick)else Modifier).padding(vertical=10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(14.dp)) {
         Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) { Label(title,weight=FontWeight.Medium);if(subtitle!=null)Label(subtitle,size=12,color=Muted) };trailing()
     }
 }
 
 @Composable fun ToggleRow(title: String,subtitle: String?=null,checked: Boolean,onChange: (Boolean)->Unit) {
     SettingRow(title,subtitle,onClick={onChange(!checked)}) {
-        Box(Modifier.size(38.dp,23.dp).clip(RoundedCornerShape(20.dp)).background(if(checked) Ink else Color(0xFFCDD1D6)).semantics { contentDescription=if(checked)"已开启"else"已关闭" }.padding(3.dp),contentAlignment=if(checked) Alignment.CenterEnd else Alignment.CenterStart) { Box(Modifier.size(17.dp).background(Color.White,RoundedCornerShape(20.dp))) }
+        Box(Modifier.size(36.dp,22.dp).clip(RoundedCornerShape(20.dp)).background(if(checked) Ink else Line).semantics { contentDescription=if(checked)"已开启"else"已关闭" }.padding(3.dp),contentAlignment=if(checked) Alignment.CenterEnd else Alignment.CenterStart) { Box(Modifier.size(16.dp).background(if(checked)OnInk else if(LocalUiColors.current.dark)Muted else Color.White,RoundedCornerShape(20.dp))) }
     }
 }
 
-@Composable fun Divider() { Box(Modifier.fillMaxWidth().height(1.dp).background(Line)) }
-@Composable fun Caption(text: String) { Label(text,Modifier.padding(top=20.dp,bottom=8.dp),size=12,color=Muted,weight=FontWeight.Medium) }
+@Composable fun Divider() { Box(Modifier.fillMaxWidth().height(.5.dp).background(Line)) }
+@Composable fun Caption(text: String) { Label(text,Modifier.padding(top=18.dp,bottom=8.dp),size=12,color=Muted,weight=FontWeight.Medium) }
 @Composable fun Choice(options: List<Pair<String,String>>,selected: String,onSelect: (String)->Unit) {
-    Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(Wash).padding(3.dp),horizontalArrangement=Arrangement.spacedBy(3.dp)) {
         options.forEach { (id,title) ->
-            Box(Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if(id==selected)Ink else Wash).clickable { onSelect(id) }.padding(horizontal=5.dp,vertical=10.dp),contentAlignment=Alignment.Center) { Label(title,size=12,color=if(id==selected)Color.White else Ink,maxLines=1) }
+            Box(Modifier.weight(1f).clip(RoundedCornerShape(7.dp)).background(if(id==selected)Raised else Color.Transparent).border(.5.dp,if(id==selected)Line else Color.Transparent,RoundedCornerShape(7.dp)).clickable { onSelect(id) }.padding(horizontal=5.dp,vertical=8.dp),contentAlignment=Alignment.Center) { Label(title,size=12,color=if(id==selected)Ink else Muted,weight=if(id==selected)FontWeight.Medium else FontWeight.Normal,maxLines=1) }
         }
     }
 }

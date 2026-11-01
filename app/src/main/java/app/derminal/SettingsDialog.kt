@@ -11,12 +11,14 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -85,20 +87,23 @@ import java.io.File
     val storage=rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){result->notice=if(result.values.any {it})"授权成功，新会话中可访问 /sdcard"else"未获得存储权限，仍可通过文件选择器导入"}
     val notification=rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()){notice=if(it)"已允许会话通知"else"可在系统设置中开启通知"}
     Dialog(onDismiss,properties=DialogProperties(usePlatformDefaultWidth=false)) {
-        Column(Modifier.fillMaxWidth(.94f).widthIn(max=620.dp).fillMaxHeight(.87f).clip(RoundedCornerShape(22.dp)).background(Color.White)) {
-            Row(Modifier.fillMaxWidth().padding(start=22.dp,end=10.dp,top=12.dp,bottom=8.dp),verticalAlignment=Alignment.CenterVertically) {Label("设置",Modifier.weight(1f),size=21,weight=FontWeight.SemiBold);IconButton("close","关闭设置",onClick=onDismiss)}
-            Row(Modifier.fillMaxWidth().padding(horizontal=18.dp),horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-                listOf("外观","输入","会话","系统").forEach {title->Box(Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(if(section==title)Ink else Color.Transparent).clickable{section=title}.padding(vertical=10.dp),contentAlignment=Alignment.Center){Label(title,size=13,color=if(section==title)Color.White else Muted,weight=FontWeight.Medium)}}
+        Column(Modifier.widthIn(max=620.dp).fillMaxWidth(.94f).fillMaxHeight(.86f).shadow(24.dp,RoundedCornerShape(20.dp)).clip(RoundedCornerShape(20.dp)).background(Surface).border(.5.dp,Line,RoundedCornerShape(20.dp))) {
+            Row(Modifier.fillMaxWidth().padding(start=20.dp,end=12.dp,top=12.dp,bottom=6.dp),verticalAlignment=Alignment.CenterVertically) {Label("设置",Modifier.weight(1f),size=18,weight=FontWeight.SemiBold);CompactClose("关闭设置",onClick=onDismiss)}
+            Row(Modifier.fillMaxWidth().padding(horizontal=12.dp)) {
+                listOf("外观","输入","会话","系统").forEach {title->Box(Modifier.weight(1f).height(43.dp).clip(RoundedCornerShape(topStart=7.dp,topEnd=7.dp)).clickable{section=title},contentAlignment=Alignment.Center){
+                    Label(title,size=13,color=if(section==title)Ink else Muted,weight=if(section==title)FontWeight.Medium else FontWeight.Normal)
+                    if(section==title)Box(Modifier.align(Alignment.BottomCenter).width(19.dp).height(2.dp).background(Accent,RoundedCornerShape(2.dp)))
+                }}
             }
-            Spacer(Modifier.height(10.dp));Divider()
+            Divider()
             key(section) {
-                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal=22.dp).padding(bottom=24.dp)) {
+                Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(horizontal=20.dp).padding(bottom=22.dp)) {
                     when(section) {
                         "外观"->{
                             Caption("配色")
                             palettes.chunked(2).forEach {row->Row(Modifier.fillMaxWidth().padding(bottom=8.dp),horizontalArrangement=Arrangement.spacedBy(8.dp)){row.forEach {theme->
                                 val bg=Color(android.graphics.Color.parseColor(theme.background));val fg=Color(android.graphics.Color.parseColor(theme.foreground))
-                                Column(Modifier.weight(1f).clip(RoundedCornerShape(11.dp)).background(bg).border(if(p.theme==theme.id)2.dp else 1.dp,if(p.theme==theme.id)Accent else Line,RoundedCornerShape(11.dp)).clickable{change{it.copy(theme=theme.id,customForeground="",customBackground="")}}.padding(12.dp)) {
+                                Column(Modifier.weight(1f).clip(RoundedCornerShape(9.dp)).background(bg).border(if(p.theme==theme.id)1.5.dp else .5.dp,if(p.theme==theme.id)Accent else Line,RoundedCornerShape(9.dp)).clickable{change{it.copy(theme=theme.id,customForeground="",customBackground="")}}.padding(12.dp)) {
                                     Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically){Label(theme.name,Modifier.weight(1f),size=12,color=fg);if(p.theme==theme.id)Glyph("check",Modifier.size(14.dp),fg)}
                                     Spacer(Modifier.height(8.dp));Label("~ $ ls -la",size=12,color=fg,mono=true)
                                     Row(horizontalArrangement=Arrangement.spacedBy(4.dp)){theme.ansi.drop(1).take(6).forEach{Box(Modifier.padding(top=9.dp).size(9.dp,3.dp).background(Color(android.graphics.Color.parseColor(it)),RoundedCornerShape(2.dp)))}}
@@ -111,9 +116,13 @@ import java.io.File
                             Choice(listOf("system" to "系统等宽","serif" to "衬线等宽","custom" to "导入字体"),p.font){id->if(id=="custom")fontPicker.launch(arrayOf("*/*"))else change{it.copy(font=id)}}
                             ToggleRow("加粗文字",checked=p.bold){v->change{it.copy(bold=v)}}
                             Divider();Caption("背景")
-                            SettingRow("背景图片",if(p.background)"已启用，点击更换"else"从本地选择图片",onClick={imagePicker.launch(arrayOf("image/*"))}) {Glyph("chevron",color=Muted)}
-                            if(File(context.filesDir,"background.jpg").exists()) {
-                                ToggleRow("显示背景图片",checked=p.background){v->change{it.copy(background=v)}}
+                            SettingRow("背景图片",if(p.background)"已设置"else"未设置",onClick={imagePicker.launch(arrayOf("image/*"))}) {
+                                Row(verticalAlignment=Alignment.CenterVertically) {
+                                    if(p.background)TextAction("清除") {change{it.copy(background=false)};engine.assetsVersion++;scope.launch(Dispatchers.IO){File(context.filesDir,"background.jpg").delete()}}
+                                    Glyph("chevron",Modifier.size(16.dp),Muted)
+                                }
+                            }
+                            if(p.background) {
                                 NumberSetting("背景遮罩",p.backgroundDim,20..100,"%",step=5){n->change{it.copy(backgroundDim=n)}}
                             }
                             Divider();Caption("光标")
@@ -208,9 +217,15 @@ import java.io.File
 }
 
 @Composable private fun NumberSetting(title: String,value: Int,range: IntRange,unit: String,step: Int=1,onChange: (Int)->Unit) {
-    SettingRow(title) {Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(6.dp)) {
-        Action("−",enabled=value>range.first){onChange((value-step).coerceIn(range))}
-        Label("$value $unit",Modifier.widthIn(min=48.dp),size=13,mono=true)
-        Action("+",enabled=value<range.last){onChange((value+step).coerceIn(range))}
+    SettingRow(title) {Row(Modifier.height(34.dp).clip(RoundedCornerShape(8.dp)).background(Wash).border(.5.dp,Line,RoundedCornerShape(8.dp)),verticalAlignment=Alignment.CenterVertically) {
+        StepButton("−",value>range.first){onChange((value-step).coerceIn(range))}
+        Box(Modifier.widthIn(min=53.dp).padding(horizontal=3.dp),contentAlignment=Alignment.Center) {Label("$value $unit",size=12,mono=true)}
+        StepButton("+",value<range.last){onChange((value+step).coerceIn(range))}
     }}
+}
+
+@Composable private fun StepButton(text: String,enabled: Boolean,onClick: ()->Unit) {
+    val source=remember {androidx.compose.foundation.interaction.MutableInteractionSource()}
+    val pressed by source.collectIsPressedAsState()
+    Box(Modifier.size(32.dp,34.dp).clip(RoundedCornerShape(7.dp)).background(if(pressed)LocalUiColors.current.pressed else Color.Transparent).clickable(source,null,enabled=enabled,onClick=onClick),contentAlignment=Alignment.Center) {Label(text,size=17,color=if(enabled)Ink else Muted.copy(alpha=.45f),weight=FontWeight.Normal)}
 }

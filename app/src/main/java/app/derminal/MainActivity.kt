@@ -29,8 +29,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -56,22 +58,37 @@ import java.io.File
 
 class MainActivity : ComponentActivity() {
     private val engine get()=(application as DerminalApp).engine
+    private var appliedTheme: String?=null
     override fun onCreate(savedInstanceState: Bundle?) {
+        setTheme(if(interfaceColors(engine.settings.value.theme).dark)R.style.AppThemeDark else R.style.AppTheme)
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window,false)
-        window.statusBarColor=android.graphics.Color.TRANSPARENT
-        window.navigationBarColor=if(Build.VERSION.SDK_INT>=27)android.graphics.Color.TRANSPARENT else android.graphics.Color.rgb(32,35,39)
         if(Build.VERSION.SDK_INT>=29)window.isNavigationBarContrastEnforced=false
-        WindowCompat.getInsetsController(window,window.decorView).apply { isAppearanceLightStatusBars=true;isAppearanceLightNavigationBars=true }
+        syncChrome(engine.settings.value.theme)
         startForegroundService(Intent(this,TerminalService::class.java))
         setContent { Derminal(engine) }
     }
     override fun onResume() { super.onResume();engine.scope.launch(Dispatchers.IO) { if(engine.boot.value.ready)engine.runtime.refreshDns() };engine.view?.setTerminalCursorBlinkerState(true,true) }
     override fun onPause() { engine.view?.setTerminalCursorBlinkerState(false,false);super.onPause() }
     fun screenOn(value: Boolean) { if(value)window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)else window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+    fun syncChrome(theme: String) {
+        if(appliedTheme==theme)return
+        appliedTheme=theme
+        val colors=interfaceColors(theme)
+        setTheme(if(colors.dark)R.style.AppThemeDark else R.style.AppTheme)
+        window.statusBarColor=android.graphics.Color.TRANSPARENT
+        window.navigationBarColor=if(Build.VERSION.SDK_INT>=27)android.graphics.Color.TRANSPARENT else if(colors.dark)colors.surface.toArgb()else android.graphics.Color.rgb(32,35,39)
+        WindowCompat.getInsetsController(window,window.decorView).apply {isAppearanceLightStatusBars=!colors.dark;isAppearanceLightNavigationBars=!colors.dark}
+    }
 }
 
 @Composable fun Derminal(engine: TerminalEngine) {
+    val theme=engine.settings.value.theme
+    val colors=remember(theme){interfaceColors(theme)}
+    CompositionLocalProvider(LocalUiColors provides colors) {DerminalContent(engine)}
+}
+
+@Composable private fun DerminalContent(engine: TerminalEngine) {
     val boot by engine.boot.collectAsStateWithLifecycle()
     val p=engine.settings.value
     val context=LocalContext.current
@@ -80,19 +97,18 @@ class MainActivity : ComponentActivity() {
     var renaming by remember { mutableStateOf<Tab?>(null) }
     var searching by remember { mutableStateOf(false) }
     val ime=WindowInsets.ime.getBottom(LocalDensity.current)>0
-    SideEffect { (context as? MainActivity)?.screenOn(p.keepScreen) }
+    SideEffect { (context as? MainActivity)?.let{it.screenOn(p.keepScreen);it.syncChrome(p.theme)} }
     BackHandler(enabled=engine.modifiers.ctrl>0 || engine.modifiers.alt>0 || engine.modifiers.shift>0 || engine.modifiers.fn>0) { engine.modifiers.clear() }
-    Column(Modifier.fillMaxSize().background(Color.White).windowInsetsPadding(WindowInsets.systemBars).imePadding()) {
+    Column(Modifier.fillMaxSize().background(Surface).windowInsetsPadding(WindowInsets.systemBars).imePadding()) {
         Row(Modifier.fillMaxWidth().height(51.dp).padding(horizontal=6.dp),verticalAlignment=Alignment.CenterVertically) {
             val rowState=androidx.compose.foundation.lazy.rememberLazyListState()
             LaunchedEffect(engine.selected) { val index=engine.tabs.indexOfFirst { it.id==engine.selected };if(index>=0)rowState.animateScrollToItem(index) }
             LazyRow(Modifier.weight(1f),state=rowState,horizontalArrangement=Arrangement.spacedBy(4.dp),verticalAlignment=Alignment.CenterVertically) {
                 items(engine.tabs,key={it.id}) { tab ->
                     val selected=engine.selected==tab.id
-                    Row(Modifier.height(37.dp).widthIn(min=92.dp,max=195.dp).clip(RoundedCornerShape(9.dp)).background(if(selected)Wash else Color.Transparent).combinedClickable(onClick={engine.select(tab)},onLongClick={renaming=tab}).padding(start=11.dp),verticalAlignment=Alignment.CenterVertically) {
-                        Box(Modifier.size(5.dp).background(if(tab.exited)Color(0xFFA4A8AE)else if(tab.unread)Accent else if(selected)Ink else Color(0xFF9AA0A7),RoundedCornerShape(5.dp)))
-                        Spacer(Modifier.width(7.dp));Label(tab.name,Modifier.weight(1f,fill=false),size=13,weight=if(selected)FontWeight.SemiBold else FontWeight.Normal,maxLines=1)
-                        IconButton("close","关闭 ${tab.name}",Modifier.size(33.dp),color=Muted) { closing=tab }
+                    Row(Modifier.height(35.dp).widthIn(min=78.dp,max=190.dp).clip(RoundedCornerShape(8.dp)).background(if(selected)Wash else Color.Transparent).combinedClickable(onClick={engine.select(tab)},onLongClick={renaming=tab}).padding(start=11.dp,end=3.dp),verticalAlignment=Alignment.CenterVertically) {
+                        Label(tab.name,Modifier.weight(1f,fill=false),size=13,color=if(tab.unread)Accent else if(tab.exited)Muted else Ink,weight=if(selected || tab.unread)FontWeight.Medium else FontWeight.Normal,maxLines=1)
+                        Spacer(Modifier.width(4.dp));CompactClose("关闭 ${tab.name}",small=true) {closing=tab}
                     }
                 }
             }
@@ -107,8 +123,8 @@ class MainActivity : ComponentActivity() {
                 else -> Column(Modifier.align(Alignment.Center),horizontalAlignment=Alignment.CenterHorizontally,verticalArrangement=Arrangement.spacedBy(16.dp)) { Glyph("terminal",Modifier.size(32.dp),Muted);Action("新建终端",primary=true) { engine.newTab() } }
             }
             if(engine.recovered && boot.ready) Row(Modifier.align(Alignment.TopCenter).padding(8.dp).clip(RoundedCornerShape(10.dp)).background(Wash).border(1.dp,Line,RoundedCornerShape(10.dp)).padding(start=12.dp),verticalAlignment=Alignment.CenterVertically) { Label("已恢复标签，会话已重新启动",size=12,color=Muted);IconButton("close","关闭提示",Modifier.size(32.dp)) {engine.recovered=false} }
-            engine.active?.takeIf { it.exited }?.let { tab -> Row(Modifier.align(Alignment.BottomCenter).padding(12.dp).clip(RoundedCornerShape(12.dp)).background(Color.White).border(1.dp,Line,RoundedCornerShape(12.dp)).padding(10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) { Label("会话已结束  ${tab.status}",size=12,color=Muted);Action("重新打开") { val name=tab.name;engine.close(tab);engine.newTab(name) } } }
-            androidx.compose.animation.AnimatedVisibility(engine.toast!=null,Modifier.align(Alignment.BottomCenter).padding(16.dp),enter=fadeIn(),exit=fadeOut()) { Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Ink).padding(horizontal=16.dp,vertical=10.dp)) { Label(engine.toast.orEmpty(),size=13,color=Color.White) } }
+            engine.active?.takeIf { it.exited }?.let { tab -> Row(Modifier.align(Alignment.BottomCenter).padding(12.dp).clip(RoundedCornerShape(12.dp)).background(Surface).border(.5.dp,Line,RoundedCornerShape(12.dp)).padding(10.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(12.dp)) { Label("会话已结束  ${tab.status}",size=12,color=Muted);Action("重新打开") { val name=tab.name;engine.close(tab);engine.newTab(name) } } }
+            androidx.compose.animation.AnimatedVisibility(engine.toast!=null,Modifier.align(Alignment.BottomCenter).padding(16.dp),enter=fadeIn(),exit=fadeOut()) { Box(Modifier.clip(RoundedCornerShape(10.dp)).background(Ink).padding(horizontal=16.dp,vertical=10.dp)) { Label(engine.toast.orEmpty(),size=13,color=OnInk) } }
         }
         if(ime || p.extraAlways) KeyDeck(engine,onSettings={settings=true})
     }
@@ -118,7 +134,7 @@ class MainActivity : ComponentActivity() {
         var name by remember(tab.id) { mutableStateOf(tab.name) }
         SheetDialog("标签名称",onDismiss={renaming=null}) {
             Field(name,{name=it.take(40)},hint="终端名称")
-            Spacer(Modifier.height(8.dp));Label(tab.title.ifBlank { "长按标签可再次修改名称" },size=12,color=Muted,maxLines=2)
+            if(tab.title.isNotBlank()){Spacer(Modifier.height(8.dp));Label(tab.title,size=12,color=Muted,maxLines=2)}
             Spacer(Modifier.height(20.dp));Action("保存",Modifier.fillMaxWidth(),primary=true,enabled=name.isNotBlank()) { engine.rename(tab,name);renaming=null }
         }
     }
@@ -156,8 +172,8 @@ class MainActivity : ComponentActivity() {
 
 @Composable fun SheetDialog(title: String,onDismiss: ()->Unit,content: @Composable ColumnScope.()->Unit) {
     Dialog(onDismiss,properties=DialogProperties(usePlatformDefaultWidth=false)) {
-        Column(Modifier.fillMaxWidth(.92f).widthIn(max=560.dp).clip(RoundedCornerShape(22.dp)).background(Color.White).padding(22.dp)) {
-            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {Label(title,Modifier.weight(1f),size=18,weight=FontWeight.SemiBold);IconButton("close","关闭",onClick=onDismiss)}
+        Column(Modifier.widthIn(max=560.dp).fillMaxWidth(.92f).shadow(20.dp,RoundedCornerShape(20.dp)).clip(RoundedCornerShape(20.dp)).background(Surface).border(.5.dp,Line,RoundedCornerShape(20.dp)).padding(20.dp)) {
+            Row(Modifier.fillMaxWidth(),verticalAlignment=Alignment.CenterVertically) {Label(title,Modifier.weight(1f),size=18,weight=FontWeight.SemiBold);CompactClose("关闭",onClick=onDismiss)}
             Spacer(Modifier.height(16.dp));content()
         }
     }

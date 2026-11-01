@@ -10,4 +10,15 @@
         <item name="android:windowNoTitle">true</item>
     </style>
     <style name="AppTheme" parent="AppThemeBase" />
+    <style name="AppThemeDarkBase" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#14161A</item>
+        <item name="android:navigationBarColor">#14161A</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">#14161A</item>
+        <item name="android:colorAccent">#B9CFDD</item>
+        <item name="android:windowNoTitle">true</item>
+    </style>
+    <style name="AppThemeDark" parent="AppThemeDarkBase" />
 </resources>

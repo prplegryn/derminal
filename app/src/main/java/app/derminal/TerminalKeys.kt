@@ -45,8 +45,9 @@ private val repeatingKeys=setOf("↑","↓","←","→","BKSP","DEL","PGUP","PGD
     val context=LocalContext.current
     val keyboardVisible=WindowInsets.ime.getBottom(LocalDensity.current)>0
     val enabled=engine.active?.exited==false
-    Column(Modifier.fillMaxWidth().background(Color(0xFFF6F7F9))) {
-        Box(Modifier.fillMaxWidth().height(.5.dp).background(Color(0xFFDFE3E8)))
+    val colors=LocalUiColors.current
+    Column(Modifier.fillMaxWidth().background(colors.keyDeck)) {
+        Box(Modifier.fillMaxWidth().height(.5.dp).background(Line))
         Row(Modifier.fillMaxWidth().padding(horizontal=8.dp,vertical=6.dp),horizontalArrangement=Arrangement.spacedBy(7.dp)) {
             Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(4.dp)) {
                 listOf(p.row1,p.row2).forEach { row ->
@@ -77,8 +78,9 @@ private val repeatingKeys=setOf("↑","↓","←","→","BKSP","DEL","PGUP","PGD
     val click by rememberUpdatedState(onClick)
     val tick by rememberUpdatedState(onRepeat)
     val shape=RoundedCornerShape(6.dp)
-    val background=when {state==2 && pressed->Color(0xFF3B5262);state==2->Color(0xFF293D4A);state==1 && pressed->Color(0xFFCBDDE9);state==1->Color(0xFFE0E9F0);pressed->Color(0xFFE4E8ED);utility->Color(0xFFEDF0F4);else->Color.White}
-    val foreground=when {state==2->Color.White;!enabled->Color(0xFFABB1BA);state==1->Color(0xFF28475C);else->Color(0xFF373F49)}
+    val colors=LocalUiColors.current
+    val background=when {state==2 && pressed->Accent.copy(alpha=.78f);state==2->Accent;state==1 && pressed->Accent.copy(alpha=.28f);state==1->Accent.copy(alpha=.18f);pressed->colors.pressed;utility->Wash;else->Raised}
+    val foreground=when {state==2->colors.onAccent;!enabled->Muted.copy(alpha=.65f);state==1->Accent;else->Ink}
     val description=when(key){"settings"->"设置";"keyboard"->"显示或收起键盘";"↑"->"向上";"↓"->"向下";"←"->"向左";"→"->"向右";else->key} + when(state){1->" 已启用一次";2->" 已锁定";else->""}
     val interaction=if(repeat) {
         Modifier.semantics {role=Role.Button;contentDescription=description;if(!enabled)disabled();this.onClick {if(enabled)click();enabled}}
@@ -92,7 +94,7 @@ private val repeatingKeys=setOf("↑","↓","←","→","BKSP","DEL","PGUP","PGD
                 }})
             }else Modifier)
     } else Modifier.combinedClickable(interactionSource=source,indication=null,enabled=enabled,role=Role.Button,onClick=onClick,onLongClick=onLock).semantics{contentDescription=description}
-    Box(modifier.clip(shape).background(background).then(if(utility || state>0)Modifier else Modifier.border(.5.dp,Color(0xFFE3E7ED),shape)).then(interaction),contentAlignment=Alignment.Center) {
+    Box(modifier.clip(shape).background(background).then(if(utility || state>0)Modifier else Modifier.border(.5.dp,Line.copy(alpha=.85f),shape)).then(interaction),contentAlignment=Alignment.Center) {
         when {
             key in listOf("↑","↓","←","→")->KeyArrow(key,foreground)
             key=="settings" || key=="keyboard"->Glyph(key,Modifier.size(17.dp),foreground)
@@ -102,7 +104,7 @@ private val repeatingKeys=setOf("↑","↓","←","→","BKSP","DEL","PGUP","PGD
                 BasicText(name,style=TextStyle(color=foreground,fontFamily=if(symbol)FontFamily.Monospace else FontFamily.SansSerif,fontSize=(if(symbol)15 else if(name.length>4)11 else 12).sp,lineHeight=16.sp,fontWeight=if(symbol)FontWeight.Normal else FontWeight.Medium,letterSpacing=if(symbol)0.sp else .1.sp,platformStyle=PlatformTextStyle(includeFontPadding=false)),maxLines=1,overflow=TextOverflow.Clip)
             }
         }
-        if(state==2)Box(Modifier.align(Alignment.BottomCenter).padding(bottom=4.dp).width(7.dp).height(1.5.dp).background(Color(0xFFD9E6EF),RoundedCornerShape(2.dp)))
+        if(state==2)Box(Modifier.align(Alignment.BottomCenter).padding(bottom=4.dp).width(7.dp).height(1.5.dp).background(colors.onAccent.copy(alpha=.8f),RoundedCornerShape(2.dp)))
     }
 }
 
